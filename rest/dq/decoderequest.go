@@ -5,6 +5,7 @@
 package dq
 
 import (
+	"github.com/dlmc/ids/global"
 	"github.com/dlmc/ids/dqstore"
 	"github.com/dlmc/golight/ghttp"
 	zlog "github.com/rs/zerolog"
@@ -15,45 +16,40 @@ import (
 
 var store = dqstore.New()
 
-const (
-	strStoreEmpty = "store empty - "
-	strStoreNameEmpty = "storename empty"
-	strStoreExist = "store exists - "
-	strStoreNotExist = "store does not exists - "
-	strStoreGetActionEmpty = "action emtpy - [size]"
-	strStoreGetActionNotExist = " is not in [size]"
-	strStorePutActionEmpty = "action empty - [clear]"
-	strStorePutActionNotExit = " is not in [clear]"
-	strDataPutActionEmpty = "action empty - [f,b]"
-	strDataPutActionNotExist = " is not in - [f,b]"
-)
-
 func decodeRequestN(h *ghttp.Http) (sn string, err error) {
 	query := h.Query
-	if sn = query.Get("storename"); sn == "" {
-		err = errors.New(strStoreNameEmpty)
+	if sn = query.Get(global.QueryName); sn == "" {
+		err = errors.New(global.StrNameEmpty)
 	}
 	return
 }
 
-
-func decodeRequestNA(h *ghttp.Http, emptyMsg string)  (sn, action string, err error) {
+func decodeRequestNT(h *ghttp.Http) (n, t string, err error) {
 	query := h.Query
-	if sn = query.Get("storename"); sn == "" {
-		err = errors.New(strStoreNameEmpty)
-	} else if action = query.Get("action"); action == "" {
+	if n = query.Get(global.QueryName); n == "" {
+		err = errors.New(global.StrNameEmpty)
+	} else if t = query.Get(global.QueryType); t == "" {
+		err = errors.New(global.StrTypeEmpty)
+	}
+	return
+}
+func decodeRequestNA(h *ghttp.Http, emptyMsg string)  (n, a string, err error) {
+	query := h.Query
+	if n = query.Get(global.QueryName); n == "" {
+		err = errors.New(global.StrNameEmpty)
+	} else if a = query.Get(global.QueryAction); a == "" {
 		err = errors.New(emptyMsg)
 	}
 	return
 }
 
-func decodeRequestNAV(h *ghttp.Http, emptyMsg string)  (sn, action, v string, err error) {
+func decodeRequestNAV(h *ghttp.Http, emptyMsg string)  (n, a, v string, err error) {
 	query := h.Query
-	if sn = query.Get("storename"); sn == "" {
-		err = errors.New(strStoreNameEmpty)
-	} else if action = query.Get("action"); action == "" {
+	if n = query.Get(global.QueryName); n == "" {
+		err = errors.New(global.StrNameEmpty)
+	} else if a = query.Get(global.QueryAction); a == "" {
 		err = errors.New(emptyMsg)
-	} else if v = query.Get("v"); v == "" {
+	} else if v = query.Get(global.QueryValue); v == "" {
 		if b, e := ioutil.ReadAll(h.R.Body); e == nil {
 			v = string(b)
 		} else {

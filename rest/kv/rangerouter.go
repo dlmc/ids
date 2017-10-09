@@ -5,7 +5,7 @@
 package kv
 
 import (
-	. "github.com/dlmc/ids/global"
+	"github.com/dlmc/ids/global"
 	"github.com/dlmc/golight/ghttp"
 	"net/http"
 	"strings"
@@ -30,15 +30,15 @@ type rangeGet struct {
 func (s *rangeGet) decodeRequest(h *ghttp.Http) (err error) {
 	query := h.Query
 	var ok bool
-	if s.sn = query.Get("storename"); s.sn == "" {
-		err = errors.New(strStoreNameEmpty)
+	if s.sn = query.Get(global.QueryName); s.sn == "" {
+		err = errors.New(global.StrNameEmpty)
 	} else if qrng := query.Get("range"); qrng == "" {
 		err = errors.New("either k or range is required")
 	} else if rng := strings.Split(qrng, "~"); rng[0] == "" || rng[1] == "" {
 		err = errors.New("range should be in [startkey~endkey]")
 	} else if limit := query.Get("limit"); limit == "" {
 		err = errors.New("limit [] empty")
-	} else if s.limit, ok = ParseInt([]byte(limit)); !ok {
+	} else if s.limit, ok = global.ParseInt(limit); !ok {
 		err = errors.New("limit not integer")			
 	} else {
 		if ascending := query.Get("ascending"); ascending == "true" {
@@ -59,7 +59,7 @@ func (s *rangeGet) ServeHTTPWithCtx(c ghttp.Ctx, h *ghttp.Http) ghttp.Ctx {
 
 	if err == nil {
 		if st, found := store.GetStore(s.sn); !found {
-			err = errors.New(strStoreNotExist + s.sn)
+			err = errors.New(global.StrStoreNotExist + s.sn)
 		} else {
 			s.Values, s.Count = st.RangeGet(s.sk, s.ek, int(s.limit), s.ascending)
 			resp.Data = s

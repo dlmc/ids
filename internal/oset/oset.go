@@ -7,8 +7,9 @@ package oset
 import (
 	"github.com/dlmc/ids/global"
 	avl "github.com/dlmc/ids/internal/avl"
+	avlu "github.com/emirpasic/gods/utils"
 	"sync"
-//	"fmt"
+	"errors"
 )
 
 // OSet implements the IDataStore interface
@@ -17,62 +18,85 @@ import (
 type OSet struct {
 	*avl.Tree
 	sync.RWMutex
+	KeyType global.Type
 	Name string
 }
 
 // New creates a OSet instance with the specified KeyType
-func New(name string, kt global.KeyType) *OSet {
-	//fmt.Println("New OSet Store")
+func New(name, ktype string) (*OSet, error) {
+	var t global.Type
 	var tree *avl.Tree
-	switch kt {
-	case global.KTInt:
-		tree = avl.NewWithIntComparator()
-	case global.KTFloat64:
+	switch ktype {
+	case global.QueryTypeInt:
+		t = global.TypeInt64
+		tree = &avl.Tree{Comparator: avlu.Int64Comparator}
+	case global.QueryTypeFloat:
+		t = global.TypeFloat64
 		tree = avl.NewWithFloat64Comparator()
-	case global.KTStr:
-		fallthrough 
-	default:
+	case global.QueryTypeStr:
+		t = global.TypeStr
 		tree = avl.NewWithStringComparator()
+	default:
+		return nil, errors.New(ktype + global.StrTypeNotExist)		
 	}
-	return &OSet{Name:name, Tree:tree}
+	return &OSet{Name:name, Tree:tree, KeyType:t}, nil
 }
 
 // Create creates the key/value pair in the set
 // Return true if key does not exist, and key/value pair created
 // Return false if key already exists, and no change made to the set
-func (d *OSet) Create(key interface{}, value interface{}) bool{
+func (d *OSet) Create(key string, value string) bool{
 	d.Lock()
 	defer d.Unlock()
-	return d.Tree.Put(key, value)
+	
+	k, ok := global.ParseInput(key, d.KeyType)
+	if ok {
+		return d.Tree.Put(k, value)
+	}
+	return ok
 }
 
 // Read gets the value of the specified key
 // Return value if found is true or nil if found false
-func (d *OSet) Read(key interface{}) (value interface{}, found bool){
+func (d *OSet) Read(key string) (value interface{}, found bool){
 	d.RLock()
 	defer d.RUnlock()
-	return d.Tree.Get(key)
+
+	k, ok := global.ParseInput(key, d.KeyType)
+	if ok {
+		return d.Tree.Get(k)
+	}
+	return nil, ok
 }
 
 // Update updates the value of an existing key in the set
 // Return true if key exists, and value updates sucessfully
 // Return false if key does not exist, and no change made to the set
-func (d *OSet) Update(key interface{}, value interface{}) bool {
+func (d *OSet) Update(key, value string) bool {
 	d.Lock()
 	defer d.Unlock()
-	if d.Tree.Remove(key) {
-		return d.Tree.Put(key, value)
+
+	k, ok := global.ParseInput(key, d.KeyType)
+	if ok {
+		if d.Tree.Remove(k) {
+			return d.Tree.Put(k, value)
+		}
 	}
+
 	return false
 }
 
 // Delete deletes an existing key in the set
 // Return true if key exists, and deletes sucessfully
 // Return false if key does not exist, and no change made to the set
-func (d *OSet) Delete(key interface{}) bool {
+func (d *OSet) Delete(key string) bool {
 	d.Lock()
 	defer d.Unlock()
-	return d.Tree.Remove(key)
+	k, ok := global.ParseInput(key, d.KeyType)
+	if ok {
+		return d.Tree.Remove(k)
+	}
+	return ok
 }
 
 // Clear wapes out the whole set and make it empty
@@ -106,36 +130,41 @@ func (d *OSet) Keys() []interface{} {
 // Ceiling node is defined as the smallest node that is larger than or equal to the given node.
 // Floor node is defined as the largest node that is smaller than or equal to the given node.
 // Floor(key interface{}) (floor *Node, found bool) 
-func (d *OSet) RangeGet(startkey, endkey interface{}, limit int, ascending bool) (values []interface{}, count int) {
+func (d *OSet) RangeGet(startkey, endkey string, limit int, ascending bool) (values []interface{}, count int) {
 	d.RLock()
 	defer d.RUnlock()
 	values = make([]interface{}, limit) //incase limit is 0
 	count = 0
-	if ascending {
-		if n, found := d.Tree.Ceiling(startkey); found {
-			for (n != nil) && (count < limit) && (d.Tree.Comparator(n.Key, endkey)<=0) {
-				values[count] = n.Value
-				count++
-				n = n.Next()
+	sk, sok := global.ParseInput(startkey, d.KeyType)
+	ek, eok := global.ParseInput(endkey, d.KeyType)
+	if sok && eok {
+		if ascending {
+			if n, found := d.Tree.Ceiling(sk); found {
+				for (n != nil) && (count < limit) && (d.Tree.Comparator(n.Key, ek)<=0) {
+					values[count] = n.Value
+					count++
+					n = n.Next()
+				}
+				if count != limit {
+					values = values[:count]
+				}
+				//return values, count
+				return
 			}
-			if count != limit {
-				values = values[:count]
+		} else {
+			if n, found := d.Tree.Floor(ek); found {
+				for (n != nil) && (count < limit) && (d.Tree.Comparator(n.Key, sk)>=0) {
+					values[count] = n.Value
+					count++
+					n = n.Prev()
+				}
+				if count != limit {
+					values = values[:count]
+				}
+				return
 			}
-			//return values, count
-			return
-		}
-	} else {
-		if n, found := d.Tree.Floor(endkey); found {
-			for (n != nil) && (count < limit) && (d.Tree.Comparator(n.Key, startkey)>=0) {
-				values[count] = n.Value
-				count++
-				n = n.Prev()
-			}
-			if count != limit {
-				values = values[:count]
-			}
-			return
 		}
 	}
+	
 	return nil, 0
 }

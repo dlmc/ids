@@ -5,6 +5,7 @@
 package kv
 
 import (
+	"github.com/dlmc/ids/global"
 	"github.com/dlmc/golight/ghttp"
 	"net/http"
 	"errors"
@@ -17,18 +18,18 @@ var StoreRouter = ghttp.Router{
 	"DELETE":&storeDelete{},
 }
 
-// GET /store?storename=sname&action=size|keys|values 
+// GET /store?n=sname&a=size|keys|values 
 type storeGet struct {}
 func (s *storeGet) ServeHTTPWithCtx(c ghttp.Ctx, h *ghttp.Http) ghttp.Ctx {
 	reqUri := h.R.RequestURI
 	resp := h.Resp
 	log := h.Log.Str("Get",reqUri).Logger()
-	sn, action, err := decodeRequestNA(h, strStoreGetActionEmpty)
+	n, a, err := decodeRequestNA(h, global.StrKvStoreGetActionEmpty)
 	if err == nil {
-		if st, found := store.GetStore(sn); !found {
-			err = errors.New(strStoreNotExist + sn)
+		if st, found := store.GetStore(n); !found {
+			err = errors.New(global.StrStoreNotExist + n)
 		} else {
-			switch action {
+			switch a {
 			case "size":
 				resp.Data = st.Size()
 			case "keys":
@@ -36,7 +37,7 @@ func (s *storeGet) ServeHTTPWithCtx(c ghttp.Ctx, h *ghttp.Http) ghttp.Ctx {
 			case "values":
 				resp.Data = st.Values()
 			default:
-				err = errors.New(action + strStoreGetActionNotExist)
+				err = errors.New(a + global.StrKvStoreGetActionNotExist)
 			}
 		}
 	}
@@ -44,17 +45,14 @@ func (s *storeGet) ServeHTTPWithCtx(c ghttp.Ctx, h *ghttp.Http) ghttp.Ctx {
 	return c
 }
 
-// POST /store?storename=sname&keytype=string|int|float&storetype=oset  
+// POST /store?n=sname&k=string|int|float&st=oset  
 type storePost struct {}
 func (s *storePost) ServeHTTPWithCtx(c ghttp.Ctx, h *ghttp.Http) ghttp.Ctx {
 	reqUri := h.R.RequestURI
 	log := h.Log.Str("Post", reqUri).Logger()
-	sn, st, kt, err := decodeRequestNSK(h)
+	st, n, t, err := decodeRequestNSK(h)
 	if err == nil {
-		//kt ignored, all uses string key for now
-		if ok := store.CreateStore(sn, st, kt); !ok {
-			err = errors.New(strStoreExist + sn)
-		}
+		err = store.CreateStore(n, st, t)
 	}
 	finishHandling(err,  h.Resp, log, reqUri, http.StatusCreated)
 	return c
@@ -65,14 +63,14 @@ type storePut struct {}
 func (s *storePut) ServeHTTPWithCtx(c ghttp.Ctx, h *ghttp.Http) ghttp.Ctx {
 	reqUri := h.R.RequestURI
 	log := h.Log.Str("Put", reqUri).Logger()
-	sn, action, err := decodeRequestNA(h, strStorePutActionEmpty)
+	n, a, err := decodeRequestNA(h, global.StrKvStorePutActionEmpty)
 	if err == nil {
-		if action != "clear" {
-			err = errors.New(action + strStorePutActionNotExit)
-		} else if st, found := store.GetStore(sn); found {
+		if a != "clear" {
+			err = errors.New(a + global.StrKvStorePutActionNotExit)
+		} else if st, found := store.GetStore(n); found {
 			st.Clear()
 		} else {
-			err = errors.New(strStoreNotExist + sn)
+			err = errors.New(global.StrStoreNotExist + n)
 		}
 	}
 	finishHandling(err,  h.Resp, log, reqUri, http.StatusOK)
@@ -84,12 +82,12 @@ type storeDelete struct {}
 func (s *storeDelete) ServeHTTPWithCtx(c ghttp.Ctx, h *ghttp.Http) ghttp.Ctx {
 	reqUri := h.R.RequestURI
 	log := h.Log.Str("Delete",reqUri).Logger()
-	sn, err := decodeRequestN(h)
+	n, err := decodeRequestN(h)
 	if err == nil {		
-		if _, found := store.GetStore(sn); found {
-			store.DeleteStore(sn)
+		if _, found := store.GetStore(n); found {
+			store.DeleteStore(n)
 		} else {
-			err = errors.New(strStoreNotExist + sn)
+			err = errors.New(global.StrStoreNotExist + n)
 		}
 	}
 	finishHandling(err, h.Resp, log, reqUri, http.StatusOK)

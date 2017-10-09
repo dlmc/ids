@@ -16,40 +16,30 @@ import (
 
 var store = kvstore.New()
 
-const (
-	strStoreNameEmpty = "storename empty"
-	strStoreExist = "store exists - "
-	strStoreNotExist = "store does not exists - "
-	strStoreGetActionEmpty = "action emtpy - [size, keys, values]"
-	strStoreGetActionNotExist = " is not in [size, keys, values]"
-	strStorePutActionEmpty = "action empty - [clear]"
-	strStorePutActionNotExit = " is not in [clear]"
-	strKeyEmpty = "key empty"
-	strKeyExist = "key exists - "
-	strKeyNotExist = "key does not exist - "
-)
 
-func decodeRequestNSK(h *ghttp.Http) (sn string, st global.StoreType, kt global.KeyType, err error) {
+func decodeRequestNSK(h *ghttp.Http) (st, n, t string, err error) {
 	query := h.Query
-	if sn = query.Get("storename"); sn == "" {
-		err = errors.New(strStoreNameEmpty)
-	} else if st, err = global.GetStoreType(query.Get("storetype")); err == nil {
-		kt, err = global.GetKeyType(query.Get("keytype"))
+	if n = query.Get(global.QueryName); n == "" {
+		err = errors.New(global.StrNameEmpty)
+	} else if st = query.Get(global.QueryStoreType); st == "" {
+		err = errors.New(global.StrStoreTypeEmpty)
+	} else if t = query.Get(global.QueryType); t == "" {
+		err = errors.New(global.StrTypeEmpty)
 	}
 	return
 }
 
 func decodeRequestNKV(h *ghttp.Http) (sn, k, v string, err error) {
 	query := h.Query
-	if sn = query.Get("storename"); sn == "" {
-		err = errors.New(strStoreNameEmpty)
-	} else if k = query.Get("k"); k == "" {
-		err = errors.New(strKeyEmpty)
-	} else if v = query.Get("v"); v == "" {
+	if sn = query.Get(global.QueryName); sn == "" {
+		err = errors.New(global.StrNameEmpty)
+	} else if k = query.Get(global.QueryKey); k == "" {
+		err = errors.New(global.StrKeyEmpty)
+	} else if v = query.Get(global.QueryValue); v == "" {
 		if b, e := ioutil.ReadAll(h.R.Body); e == nil {
 			v = string(b)
 		} else {
-			err = errors.New("Error reading body: " + err.Error())
+			err = errors.New("Error reading body: " + e.Error())
         }
 	}
 	return
@@ -57,19 +47,19 @@ func decodeRequestNKV(h *ghttp.Http) (sn, k, v string, err error) {
 
 func decodeRequestNK(h *ghttp.Http) (sn, k string, err error) {
 	query := h.Query
-	if sn = query.Get("storename"); sn == "" {
-		err = errors.New(strStoreNameEmpty)
-	} else if k = query.Get("k"); k == "" {
-		err = errors.New(strKeyEmpty)
+	if sn = query.Get(global.QueryName); sn == "" {
+		err = errors.New(global.StrNameEmpty)
+	} else if k = query.Get(global.QueryKey); k == "" {
+		err = errors.New(global.StrKeyEmpty)
 	}
 	return
 }
 
 func decodeRequestNA(h *ghttp.Http, emptyMsg string)  (sn, action string, err error) {
 	query := h.Query
-	if sn = query.Get("storename"); sn == "" {
-		err = errors.New(strStoreNameEmpty)
-	} else if action = query.Get("action"); action == "" {
+	if sn = query.Get(global.QueryName); sn == "" {
+		err = errors.New(global.StrNameEmpty)
+	} else if action = query.Get(global.QueryAction); action == "" {
 		err = errors.New(emptyMsg)
 	}
 	return
@@ -78,8 +68,8 @@ func decodeRequestNA(h *ghttp.Http, emptyMsg string)  (sn, action string, err er
 
 func  decodeRequestN(h *ghttp.Http) (sn string, err error) {
 	query := h.Query
-	if sn = query.Get("storename"); sn == "" {
-		err = errors.New(strStoreNameEmpty)
+	if sn = query.Get(global.QueryName); sn == "" {
+		err = errors.New(global.StrNameEmpty)
 	}
 	return
 }

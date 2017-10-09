@@ -34,7 +34,7 @@ func tReadRequestHttp(t *testing.T, nRequest, nTotalKeys int, key, str, rootUrl 
 		k := rand.Intn(nTotalKeys)
 		kpad := global.Int2StrPadZero(k,10)
 		
-		u := rootUrl+"/kvdata?storename=mystore&k="+ kpad+key
+		u := rootUrl+"/kvdata?n=mystore&k="+ kpad+key
 		res,err := http.Get(u)
 		want := `{"code":200,"message":"success","data":"`+kpad+str+`"}`+"\n"
 		tResult(t, res, err, want, code)
@@ -44,29 +44,24 @@ func tReadRequestHttp(t *testing.T, nRequest, nTotalKeys int, key, str, rootUrl 
 
 func tRunTest(t *testing.T, nTotalKeys int, a []int, key, str, storetype string) {
 	store := kvstore.New()
-	st, err := global.GetStoreType(storetype)
-	if err != nil {
-		t.Errorf("storetype: %s not supported", storetype)			
+	if err:= store.CreateStore("mystore", storetype, "str"); err != nil {
+		t.Errorf("creating storetype: %s failed", storetype)			
 	} else {
-		if store.CreateStore("mystore", st, global.KTStr) != true {
-			t.Errorf("creating storetype: %s failed", storetype)			
+		if kvs, found := store.GetStore("mystore"); !found {
+			t.Errorf("can't find store %s", "mystore")			
 		} else {
-			if kvs, found := store.GetStore("mystore"); !found {
-				t.Errorf("can't find store %s", "mystore")			
-			} else {
-				t.Run("Create elements", func(t *testing.T) {
-					a = a[:nTotalKeys]
-					for _, v := range a {
-						vpad := global.Int2StrPadZero(v,10)
-						k := vpad+key
-						value := vpad+str
-						kvs.Create(k, value)
-					}
-				})
-				t.Run("1000 random keys request", func(t *testing.T) {
-					tReadRequest(t, kvs, 1000, nTotalKeys, key, str)
-				})
-			}
+			t.Run("Create elements", func(t *testing.T) {
+				a = a[:nTotalKeys]
+				for _, v := range a {
+					vpad := global.Int2StrPadZero(v,10)
+					k := vpad+key
+					value := vpad+str
+					kvs.Create(k, value)
+				}
+			})
+			t.Run("1000 random keys request", func(t *testing.T) {
+				tReadRequest(t, kvs, 1000, nTotalKeys, key, str)
+			})
 		}
 	}
 }
@@ -76,7 +71,7 @@ func tRunTestHttp(t *testing.T, nTotalKeys int, a []int, key, str, rootUrl, stor
 	code := http.StatusCreated
 
 	t.Run("Create Store", func(t *testing.T) {
-		res,err := http.Post(rootUrl +"/kvstore?storename=mystore&keytype=string&storetype="+storetype, "text/html; charset=utf-8", nil)
+		res,err := http.Post(rootUrl +"/kvstore?n=mystore&t=string&st="+storetype, "text/html; charset=utf-8", nil)
 		tResult(t, res, err, want, code)
 	})
 	
@@ -87,11 +82,11 @@ func tRunTestHttp(t *testing.T, nTotalKeys int, a []int, key, str, rootUrl, stor
 			k := kpad+key
 			value := kpad+str
 			if inQuery {
-				u := rootUrl +"/kvdata?storename=mystore&k="+k+"&v="+value
+				u := rootUrl +"/kvdata?n=mystore&k="+k+"&v="+value
 				res,err := http.Post(u, "text/html; charset=utf-8", nil)
 				tResult(t, res, err, want, code)
 			} else {
-				u := rootUrl +"/kvdata?storename=mystore&k="+k
+				u := rootUrl +"/kvdata?n=mystore&k="+k
 				res,err := http.Post(u, "text/html; charset=utf-8", strings.NewReader(value))
 				tResult(t, res, err, want, code)				
 			}
@@ -102,7 +97,7 @@ func tRunTestHttp(t *testing.T, nTotalKeys int, a []int, key, str, rootUrl, stor
 	})
 	t.Run("DeleteStore", func(t *testing.T) {
 		want := `{"code":200,"message":"success"}`+"\n"
-		res,err := ghttp.Del(rootUrl+"/kvstore?storename=mystore", "text/html; charset=utf-8", nil)
+		res,err := ghttp.Del(rootUrl+"/kvstore?n=mystore", "text/html; charset=utf-8", nil)
 		tResult(t, res, err, want, http.StatusOK)
 	})
 

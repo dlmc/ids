@@ -8,47 +8,62 @@ package dqstore
 import (
 	"github.com/dlmc/ids/internal/deque"
 	"github.com/dlmc/ids/global"
-	"sync"
+ 	"sync"
+ 	"errors"
 )
 
+type DequeType uint8
+
 type dequeue struct {
-	*deque.Deque
+	dq *deque.Deque
 	sync.Mutex
+	KeyType global.Type
 }
 
-func NewDeque() *dequeue {
-	return &dequeue{Deque:deque.New()}
+
+func NewDeque(dtype string) (*dequeue, error) {
+	t, err := global.MapQueryType(dtype)
+	return &dequeue{dq:deque.New(), KeyType:t}, err
 }
 
-func (d *dequeue) Pushfront(i interface{}) {
+
+func (d *dequeue) PushFront(i string) bool {
 	d.Lock()
 	defer d.Unlock()
-	d.Deque.PushFront(i)
+	v, ok := global.ParseInput(i, d.KeyType)
+	if ok {
+		d.dq.PushFront(v)	
+	}
+	return ok
 }
-func (d *dequeue) Pushback(i interface{}) {
+func (d *dequeue) PushBack(i string) bool {
 	d.Lock()
 	defer d.Unlock()
-	d.Deque.PushBack(i)	
+	v, ok := global.ParseInput(i, d.KeyType)
+	if ok {
+		d.dq.PushBack(v)	
+	}
+	return ok
 }
-func (d *dequeue) Popfront() (interface{}, bool) {
+func (d *dequeue) PopFront() (interface{}, bool) {
 	d.Lock()
 	defer d.Unlock()
-	return d.Deque.PopFront()	
+	return d.dq.PopFront()
 }
-func (d *dequeue) Popback() (interface{}, bool) {
+func (d *dequeue) PopBack() (interface{}, bool) {
 	d.Lock()
 	defer d.Unlock()
-	return d.Deque.PopBack()	
+	return d.dq.PopBack()	
 }
 func (d *dequeue) Size() int {
 	d.Lock()
 	defer d.Unlock()
-	return d.Deque.Len()		
+	return d.dq.Len()		
 }
 func (d *dequeue) Clear() {
 	d.Lock()
 	defer d.Unlock()
-	d.Deque.Clear()
+	d.dq.Clear()
 }
 
 
@@ -58,12 +73,15 @@ func New() DequeStore {
 	return DequeStore{}
 }
 
-func (s DequeStore) CreateStore(name string) bool{
+func (s DequeStore) CreateStore(name, dtype string) error {
 	if _, ok := s[name];  ok {
-		return false
+		return errors.New(global.StrStoreExist + name)
 	}
-	s[name] = NewDeque()
-	return true
+	st, err := NewDeque(dtype)
+	if err == nil {
+		s[name] = st
+	}
+	return err
 }
 
 func (s DequeStore) DeleteStore(name string) {

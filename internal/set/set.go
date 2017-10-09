@@ -6,77 +6,94 @@ package set
 
 import (
 	"github.com/dlmc/ids/global"
-	//"sync"
-	//"fmt"
 )
 
 // Set implements the IDataStore interface
 // Set is a set with k/v elements
 // Access to the set is protected for concurrent access
 type Set struct {
-	m map[interface{}]interface{}
-	Keytype global.KeyType
 	//sync.RWMutex
+	m map[interface{}]interface{}
+	KeyType global.Type
 	Name string
 }
 
 // New creates a Set instance with the specified KeyType
-func New(name string, kt global.KeyType) *Set {
-	//fmt.Println("New Set Store")
-	return &Set{Name:name, Keytype:kt, m:make(map[interface{}]interface{})}
+func New(name, ktype string) (*Set, error) {
+	t, err := global.MapQueryType(ktype)
+	if err == nil {
+		return &Set{Name:name, KeyType:t, m:make(map[interface{}]interface{})}, nil
+	}
+	return nil, err
 }
 
 // Create creates the key/value pair in the set
 // Return true if key does not exist, and key/value pair created
 // Return false if key already exists, and no change made to the set
-func (d *Set) Create(key, value interface{}) bool{
+func (d *Set) Create(key, value string) bool {
 	//may get ride of the lock by
 	m := d.m
 	//d.Lock()
 	//defer d.Unlock()
-	var found bool
-	if _, found = m[key]; !found {
-		m[key]=value
+	
+	k, ok := global.ParseInput(key, d.KeyType)
+	if ok {
+		if _, ok = m[k]; !ok {
+			m[k]=value
+			ok = true
+		} else {
+			ok = false
+		}
 	}
-	return !found
+	return ok
 }
 
 // Read gets the value of the specified key
 // Return value if found is true or nil if found false
-func (d *Set) Read(key interface{}) (value interface{}, found bool){
+func (d *Set) Read(key string) (value interface{}, found bool){
 	//d.RLock()
 	//defer d.RUnlock()
 	m := d.m
-	value, found = m[key]
+
+	k, ok := global.ParseInput(key, d.KeyType)
+	if ok {
+		value, found = m[k]
+	}
 	return
 }
 
 // Update updates the value of an existing key in the set
 // Return true if key exists, and value updates sucessfully
 // Return false if key does not exist, and no change made to the set
-func (d *Set) Update(key, value interface{}) bool {
+func (d *Set) Update(key, value string) bool {
 	//d.Lock()
 	//defer d.Unlock()
 	m := d.m
-	var found bool
-	if _, found = m[key]; found {
-		m[key]=value
+
+	k, ok := global.ParseInput(key, d.KeyType)
+	if ok {
+		if _, ok = m[k]; ok {
+			m[k]=value
+		}
 	}
-	return found
+	return ok
 }
 
 // Delete deletes an existing key in the set
 // Return true if key exists, and deletes sucessfully
 // Return false if key does not exist, and no change made to the set
-func (d *Set) Delete(key interface{}) bool {
+func (d *Set) Delete(key string) bool {
 	//d.Lock()
 	//defer d.Unlock()	
 	m := d.m
-	var found bool
-	if _, found = m[key]; found {
-		delete(m, key)
+	k, ok := global.ParseInput(key, d.KeyType)
+	if ok {
+		if _, ok = m[k]; ok {
+			delete(m, k)
+			return ok
+		}
 	}
-	return found
+	return false
 }
 
 // Clear wapes out the whole set and make it empty
@@ -123,6 +140,6 @@ func (d *Set) Keys() []interface{} {
 }
 
 // Not implemented
-func (d *Set) RangeGet(startkey, endkey interface{}, limit int, ascending bool) (values []interface{}, count int) {
+func (d *Set) RangeGet(startkey, endkey string, limit int, ascending bool) (values []interface{}, count int) {
 	return nil, 0
 }

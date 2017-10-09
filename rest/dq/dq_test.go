@@ -47,8 +47,8 @@ func TestDq(t *testing.T) {
 	t.Run("dq data", func(t *testing.T) {
 		tDqDataTest(t, url)
 	})
-	t.Run("dq scale20000Elementsx2.6k", func(t *testing.T) {
-		tDqScaleTest(t, 20000, 100, url)
+	t.Run("dq scale1000Elementsx2.6k", func(t *testing.T) {
+		tDqScaleTest(t, 1000, 100, url)
 	})
 
 }
@@ -60,14 +60,17 @@ func tDqStoreTest(t *testing.T, rootUrl string) {
 			want string
 			code int
 		}{
-			{"/dqstore?storename=mystore", 
+			{"/dqstore?n=mystore&t=string", 
 			 `{"code":201,"message":"success"}`+"\n",
 			http.StatusCreated},
-			{"/dqstore?storename=mystore", 
-			 `{"code":400,"message":"store exists - mystore","data":"/dqstore?storename=mystore"}`+"\n",
-			http.StatusBadRequest},
-			{"/dqstore?store1name=mystore", 
-			`{"code":400,"message":"storename empty","data":"/dqstore?store1name=mystore"}`+"\n",
+			{"/dqstore?n=intstore&t=int", 
+			 `{"code":201,"message":"success"}`+"\n",
+			http.StatusCreated},
+			{"/dqstore?n=floatstore&t=float", 
+			 `{"code":201,"message":"success"}`+"\n",
+			http.StatusCreated},
+			{"/dqstore?store1name=mystore&t=string", 
+			`{"code":400,"message":"n empty","data":"/dqstore?store1name=mystore\u0026t=string"}`+"\n",
 			http.StatusBadRequest},
 		}
 		for _, test := range tests {
@@ -83,12 +86,18 @@ func tDqStoreTest(t *testing.T, rootUrl string) {
 			code int
 		}{
 			{"DELETE", "/dqstore?store1name=mystore", 
-			 `{"code":400,"message":"storename empty","data":"/dqstore?store1name=mystore"}`+"\n",
+			 `{"code":400,"message":"n empty","data":"/dqstore?store1name=mystore"}`+"\n",
 			http.StatusBadRequest},
-			{"DELETE", "/dqstore?storename=my1store", 
-			 `{"code":400,"message":"store does not exists - my1store","data":"/dqstore?storename=my1store"}`+"\n",
+			{"DELETE", "/dqstore?n=my1store", 
+			 `{"code":400,"message":"store not exist - my1store","data":"/dqstore?n=my1store"}`+"\n",
 			http.StatusBadRequest},
-			{"DELETE", "/dqstore?storename=mystore", 
+			{"DELETE", "/dqstore?n=mystore", 
+			 `{"code":200,"message":"success"}`+"\n",
+			http.StatusOK},
+			{"DELETE", "/dqstore?n=intstore", 
+			 `{"code":200,"message":"success"}`+"\n",
+			http.StatusOK},
+			{"DELETE", "/dqstore?n=floatstore", 
 			 `{"code":200,"message":"success"}`+"\n",
 			http.StatusOK},
 		}
@@ -105,25 +114,25 @@ func tDqStoreTest(t *testing.T, rootUrl string) {
 			want string
 			code int
 		}{
-			{"POST", "/dqstore?storename=mystore", 
+			{"POST", "/dqstore?n=mystore&t=string", 
 			 `{"code":201,"message":"success"}`+"\n",
 			http.StatusCreated},
-			{"PUT", "/dqstore?storename=mystore&action=cl1ear", 
-			 `{"code":400,"message":"cl1ear is not in [clear]","data":"/dqstore?storename=mystore\u0026action=cl1ear"}`+"\n",
+			{"PUT", "/dqstore?n=mystore&a=cl1ear", 
+			 `{"code":400,"message":"cl1ear is not in [clear]","data":"/dqstore?n=mystore\u0026a=cl1ear"}`+"\n",
 			http.StatusBadRequest},
-			{"PUT", "/dqstore?storename=mystore&acti1on=clear", 
-			 `{"code":400,"message":"action empty - [clear]","data":"/dqstore?storename=mystore\u0026acti1on=clear"}`+"\n",
+			{"PUT", "/dqstore?n=mystore&acti1on=clear", 
+			 `{"code":400,"message":"a empty - [clear]","data":"/dqstore?n=mystore\u0026acti1on=clear"}`+"\n",
 			http.StatusBadRequest},
-			{"PUT", "/dqstore?storename=mystore1&action=clear", 
-			 `{"code":400,"message":"store does not exists - mystore1","data":"/dqstore?storename=mystore1\u0026action=clear"}`+"\n",
+			{"PUT", "/dqstore?n=mystore1&a=clear", 
+			 `{"code":400,"message":"store not exist - mystore1","data":"/dqstore?n=mystore1\u0026a=clear"}`+"\n",
 			http.StatusBadRequest},
-			{"PUT", "/dqstore?store1name=mystore&action=clear", 
-			 `{"code":400,"message":"storename empty","data":"/dqstore?store1name=mystore\u0026action=clear"}`+"\n",
+			{"PUT", "/dqstore?store1name=mystore&a=clear", 
+			 `{"code":400,"message":"n empty","data":"/dqstore?store1name=mystore\u0026a=clear"}`+"\n",
 			http.StatusBadRequest},
-			{"PUT", "/dqstore?storename=mystore&action=clear", 
+			{"PUT", "/dqstore?n=mystore&a=clear", 
 			 `{"code":200,"message":"success"}`+"\n",
 			http.StatusOK},
-			{"DELETE", "/dqstore?storename=mystore", 
+			{"DELETE", "/dqstore?n=mystore", 
 			 `{"code":200,"message":"success"}`+"\n",
 			http.StatusOK},
 		}
@@ -139,25 +148,25 @@ func tDqStoreTest(t *testing.T, rootUrl string) {
 			want string
 			code int
 		}{
-			{"POST", "/dqstore?storename=mystore", 
+			{"POST", "/dqstore?n=mystore&t=string", 
 			 `{"code":201,"message":"success"}`+"\n",
 			http.StatusCreated},
-			{"GET", "/dqstore?storename=mystore&action=size1", 
-			 `{"code":400,"message":"size1 is not in [size]","data":"/dqstore?storename=mystore\u0026action=size1"}`+"\n",
+			{"GET", "/dqstore?n=mystore&a=size1", 
+			 `{"code":400,"message":"size1 is not in [size]","data":"/dqstore?n=mystore\u0026a=size1"}`+"\n",
 			http.StatusBadRequest},
-			{"GET", "/dqstore?storename=mystore&acti1on=size", 
-			 `{"code":400,"message":"action emtpy - [size]","data":"/dqstore?storename=mystore\u0026acti1on=size"}`+"\n",
+			{"GET", "/dqstore?n=mystore&acti1on=size", 
+			 `{"code":400,"message":"a emtpy - [size]","data":"/dqstore?n=mystore\u0026acti1on=size"}`+"\n",
 			http.StatusBadRequest},
-			{"GET", "/dqstore?storename=mystore1&action=size", 
-			 `{"code":400,"message":"store does not exists - mystore1","data":"/dqstore?storename=mystore1\u0026action=size"}`+"\n",
+			{"GET", "/dqstore?n=mystore1&a=size", 
+			 `{"code":400,"message":"store not exist - mystore1","data":"/dqstore?n=mystore1\u0026a=size"}`+"\n",
 			http.StatusBadRequest},
-			{"GET", "/dqstore?store1name=mystore&action=size", 
-			 `{"code":400,"message":"storename empty","data":"/dqstore?store1name=mystore\u0026action=size"}`+"\n",
+			{"GET", "/dqstore?store1name=mystore&a=size", 
+			 `{"code":400,"message":"n empty","data":"/dqstore?store1name=mystore\u0026a=size"}`+"\n",
 			http.StatusBadRequest},
-			{"GET", "/dqstore?storename=mystore&action=size", 
+			{"GET", "/dqstore?n=mystore&a=size", 
 			 `{"code":200,"message":"success","data":0}`+"\n",
 			http.StatusOK},
-			{"DELETE", "/dqstore?storename=mystore", 
+			{"DELETE", "/dqstore?n=mystore", 
 			 `{"code":200,"message":"success"}`+"\n",
 			http.StatusOK},
 		}
@@ -178,7 +187,13 @@ func tDqDataTest(t *testing.T, rootUrl string) {
 			want string
 			code int
 		}{
-			{"POST", "/dqstore?storename=mystore", 
+			{"POST", "/dqstore?n=mystore&t=string", 
+			 `{"code":201,"message":"success"}`+"\n",
+			http.StatusCreated},
+			{"POST", "/dqstore?n=intstore&t=int", 
+			 `{"code":201,"message":"success"}`+"\n",
+			http.StatusCreated},
+			{"POST", "/dqstore?n=floatstore&t=float", 
 			 `{"code":201,"message":"success"}`+"\n",
 			http.StatusCreated},
 		}
@@ -187,42 +202,42 @@ func tDqDataTest(t *testing.T, rootUrl string) {
 			tResult(t, res, err, test.want, test.code)
 		}
 	})
-	t.Run("DataPostPut", func(t *testing.T) {
+	t.Run("DataPostPutString", func(t *testing.T) {
 		tests := []struct {
 			method string
 			url string
 			want string
 			code int
 		}{
-			{"POST", "/dqdata?storename=mystore&action=f&v=1", 
+			{"POST", "/dqdata?n=mystore&a=f&v=a", 
 			 `{"code":201,"message":"success"}`+"\n",
 			http.StatusCreated},
-			{"POST", "/dqdata?storename=mystore&action=f&v=2", 
+			{"POST", "/dqdata?n=mystore&a=f&v=b", 
 			 `{"code":201,"message":"success"}`+"\n",
 			http.StatusCreated},
-			{"POST", "/dqdata?storename=mystore&action=b&v=0", 
+			{"POST", "/dqdata?n=mystore&a=b&v=c", 
 			 `{"code":201,"message":"success"}`+"\n",
 			http.StatusCreated},
-			{"POST", "/dqdata?storename=mystore&action=b&v=-1", 
+			{"POST", "/dqdata?n=mystore&a=b&v=d", 
 			 `{"code":201,"message":"success"}`+"\n",
 			http.StatusCreated},
-			{"PUT", "/dqdata?storename=mystore&action=f", 
-			 `{"code":200,"message":"success","data":"2"}`+"\n",
+			{"PUT", "/dqdata?n=mystore&a=f", 
+			 `{"code":200,"message":"success","data":"b"}`+"\n",
 			http.StatusOK},
-			{"PUT", "/dqdata?storename=mystore&action=f", 
-			 `{"code":200,"message":"success","data":"1"}`+"\n",
+			{"PUT", "/dqdata?n=mystore&a=f", 
+			 `{"code":200,"message":"success","data":"a"}`+"\n",
 			http.StatusOK},
-			{"PUT", "/dqdata?storename=mystore&action=b", 
-			 `{"code":200,"message":"success","data":"-1"}`+"\n",
+			{"PUT", "/dqdata?n=mystore&a=b", 
+			 `{"code":200,"message":"success","data":"d"}`+"\n",
 			http.StatusOK},
-			{"PUT", "/dqdata?storename=mystore&action=b", 
-			 `{"code":200,"message":"success","data":"0"}`+"\n",
+			{"PUT", "/dqdata?n=mystore&a=b", 
+			 `{"code":200,"message":"success","data":"c"}`+"\n",
 			http.StatusOK},
-			{"PUT", "/dqdata?storename=mystore&action=f", 
-			 `{"code":400,"message":"store empty - mystore","data":"/dqdata?storename=mystore\u0026action=f"}`+"\n",
+			{"PUT", "/dqdata?n=mystore&a=f", 
+			 `{"code":400,"message":"store empty - mystore","data":"/dqdata?n=mystore\u0026a=f"}`+"\n",
 			http.StatusBadRequest},
-			{"PUT", "/dqdata?storename=mystore&action=b", 
-			 `{"code":400,"message":"store empty - mystore","data":"/dqdata?storename=mystore\u0026action=b"}`+"\n",
+			{"PUT", "/dqdata?n=mystore&a=b", 
+			 `{"code":400,"message":"store empty - mystore","data":"/dqdata?n=mystore\u0026a=b"}`+"\n",
 			http.StatusBadRequest},
 		}
 		for _, test := range tests {
@@ -230,7 +245,80 @@ func tDqDataTest(t *testing.T, rootUrl string) {
 			tResult(t, res, err, test.want, test.code)
 		}
 	})
-	
+	t.Run("DataPostPutInt", func(t *testing.T) {
+		tests := []struct {
+			method string
+			url string
+			want string
+			code int
+		}{
+			{"POST", "/dqdata?n=intstore&a=f&v=1", 
+			 `{"code":201,"message":"success"}`+"\n",
+			http.StatusCreated},
+			{"POST", "/dqdata?n=intstore&a=f&v=2", 
+			 `{"code":201,"message":"success"}`+"\n",
+			http.StatusCreated},
+			{"POST", "/dqdata?n=intstore&a=b&v=0", 
+			 `{"code":201,"message":"success"}`+"\n",
+			http.StatusCreated},
+			{"POST", "/dqdata?n=intstore&a=b&v=-1", 
+			 `{"code":201,"message":"success"}`+"\n",
+			http.StatusCreated},
+			{"PUT", "/dqdata?n=intstore&a=f", 
+			 `{"code":200,"message":"success","data":2}`+"\n",
+			http.StatusOK},
+			{"PUT", "/dqdata?n=intstore&a=f", 
+			 `{"code":200,"message":"success","data":1}`+"\n",
+			http.StatusOK},
+			{"PUT", "/dqdata?n=intstore&a=b", 
+			 `{"code":200,"message":"success","data":-1}`+"\n",
+			http.StatusOK},
+			{"PUT", "/dqdata?n=intstore&a=b", 
+			 `{"code":200,"message":"success","data":0}`+"\n",
+			http.StatusOK},
+		}
+		for _, test := range tests {
+			res,err := ghttp.ClientHttp(test.method,  rootUrl+test.url, "text/html; charset=utf-8", nil)
+			tResult(t, res, err, test.want, test.code)
+		}
+	})	
+	t.Run("DataPostPutFloat", func(t *testing.T) {
+		tests := []struct {
+			method string
+			url string
+			want string
+			code int
+		}{
+			{"POST", "/dqdata?n=floatstore&a=f&v=1.1", 
+			 `{"code":201,"message":"success"}`+"\n",
+			http.StatusCreated},
+			{"POST", "/dqdata?n=floatstore&a=f&v=2.2", 
+			 `{"code":201,"message":"success"}`+"\n",
+			http.StatusCreated},
+			{"POST", "/dqdata?n=floatstore&a=b&v=0.5", 
+			 `{"code":201,"message":"success"}`+"\n",
+			http.StatusCreated},
+			{"POST", "/dqdata?n=floatstore&a=b&v=-1.5", 
+			 `{"code":201,"message":"success"}`+"\n",
+			http.StatusCreated},
+			{"PUT", "/dqdata?n=floatstore&a=f", 
+			 `{"code":200,"message":"success","data":2.2}`+"\n",
+			http.StatusOK},
+			{"PUT", "/dqdata?n=floatstore&a=f", 
+			 `{"code":200,"message":"success","data":1.1}`+"\n",
+			http.StatusOK},
+			{"PUT", "/dqdata?n=floatstore&a=b", 
+			 `{"code":200,"message":"success","data":-1.5}`+"\n",
+			http.StatusOK},
+			{"PUT", "/dqdata?n=floatstore&a=b", 
+			 `{"code":200,"message":"success","data":0.5}`+"\n",
+			http.StatusOK},
+		}
+		for _, test := range tests {
+			res,err := ghttp.ClientHttp(test.method,  rootUrl+test.url, "text/html; charset=utf-8", nil)
+			tResult(t, res, err, test.want, test.code)
+		}
+	})	
 }
 
 func tDqScaleTest(t *testing.T, totalKeys, repeats int, rootUrl string) {
@@ -250,11 +338,11 @@ func tDqScaleTestRun(t *testing.T, totalKeys int, str, rootUrl string, inQuery b
 		for i:=0; i<totalKeys; i++ {
 			item := str+global.Int2StrPadZero(i, 10)
 			if inQuery {
-				url := rootUrl+"/dqdata?storename=mystore&action=f&v="+ item
+				url := rootUrl+"/dqdata?n=mystore&a=f&v="+ item
 				res,err := http.Post(url, "text/html; charset=utf-8", nil)				
 				tResult(t, res, err, want, http.StatusCreated)
 			} else {
-				url := rootUrl+"/dqdata?storename=mystore&action=f"
+				url := rootUrl+"/dqdata?n=mystore&a=f"
 				res,err := http.Post(url, "text/html; charset=utf-8", strings.NewReader(item))
 				tResult(t, res, err, want, http.StatusCreated)
 			}
@@ -262,7 +350,7 @@ func tDqScaleTestRun(t *testing.T, totalKeys int, str, rootUrl string, inQuery b
 		want = `{"code":200,"message":"success","data":"`
 		for i:=0; i<totalKeys; i++ {
 			item := str+global.Int2StrPadZero(i, 10)
-			url := rootUrl+"/dqdata?storename=mystore&action=b"
+			url := rootUrl+"/dqdata?n=mystore&a=b"
 			res,err := ghttp.Put(url, "text/html; charset=utf-8", nil)
 			tResult(t, res, err, want+item+`"}`+"\n", http.StatusOK)
 		}
@@ -272,11 +360,11 @@ func tDqScaleTestRun(t *testing.T, totalKeys int, str, rootUrl string, inQuery b
 		for i:=0; i<totalKeys; i++ {
 			item := str+global.Int2StrPadZero(i, 10)
 			if inQuery {
-				url := rootUrl+"/dqdata?storename=mystore&action=b&v="+ item
+				url := rootUrl+"/dqdata?n=mystore&a=b&v="+ item
 				res,err := http.Post(url, "text/html; charset=utf-8", nil)
 				tResult(t, res, err, want, http.StatusCreated)
 			} else {
-				url := rootUrl+"/dqdata?storename=mystore&action=b"
+				url := rootUrl+"/dqdata?n=mystore&a=b"
 				res,err := http.Post(url, "text/html; charset=utf-8", strings.NewReader(item))
 				tResult(t, res, err, want, http.StatusCreated)
 			}
@@ -284,7 +372,7 @@ func tDqScaleTestRun(t *testing.T, totalKeys int, str, rootUrl string, inQuery b
 		want = `{"code":200,"message":"success","data":"`
 		for i:=0; i<totalKeys; i++ {
 			item := str+global.Int2StrPadZero(i, 10)
-			url := rootUrl+"/dqdata?storename=mystore&action=f"
+			url := rootUrl+"/dqdata?n=mystore&a=f"
 			res,err := ghttp.Put(url, "text/html; charset=utf-8", nil)
 			tResult(t, res, err, want+item+`"}`+"\n", http.StatusOK)
 		}
@@ -295,17 +383,17 @@ func tDqScaleTestRun(t *testing.T, totalKeys int, str, rootUrl string, inQuery b
 		for i:=0; i<totalKeys; i++ {
 			item := str+global.Int2StrPadZero(i, 10)
 			if inQuery {
-				url = rootUrl+"/dqdata?storename=mystore&action=f&v="+ item
+				url = rootUrl+"/dqdata?n=mystore&a=f&v="+ item
 				res,err := http.Post(url, "text/html; charset=utf-8", nil)
 				tResult(t, res, err, want, http.StatusCreated)
-				url = rootUrl+"/dqdata?storename=mystore&action=b&v="+ item
+				url = rootUrl+"/dqdata?n=mystore&a=b&v="+ item
 				res,err = http.Post(url, "text/html; charset=utf-8", nil)
 				tResult(t, res, err, want, http.StatusCreated)			
 			} else {
-				url = rootUrl+"/dqdata?storename=mystore&action=f"
+				url = rootUrl+"/dqdata?n=mystore&a=f"
 				res,err := http.Post(url, "text/html; charset=utf-8", strings.NewReader(item))
 				tResult(t, res, err, want, http.StatusCreated)
-				url = rootUrl+"/dqdata?storename=mystore&action=b"
+				url = rootUrl+"/dqdata?n=mystore&a=b"
 				res,err = http.Post(url, "text/html; charset=utf-8", strings.NewReader(item))
 				tResult(t, res, err, want, http.StatusCreated)							
 			}
@@ -313,10 +401,10 @@ func tDqScaleTestRun(t *testing.T, totalKeys int, str, rootUrl string, inQuery b
 		want = `{"code":200,"message":"success","data":"`
 		for i:=0; i<totalKeys; i++ {
 			item := str+global.Int2StrPadZero(totalKeys-i-1, 10)
-			url = rootUrl+"/dqdata?storename=mystore&action=f"
+			url = rootUrl+"/dqdata?n=mystore&a=f"
 			res,err := ghttp.Put(url, "text/html; charset=utf-8", nil)
 			tResult(t, res, err, want+item+`"}`+"\n", http.StatusOK)
-			url = rootUrl+"/dqdata?storename=mystore&action=b"
+			url = rootUrl+"/dqdata?n=mystore&a=b"
 			res,err = ghttp.Put(url, "text/html; charset=utf-8", nil)
 			tResult(t, res, err, want+item+`"}`+"\n", http.StatusOK)
 		}

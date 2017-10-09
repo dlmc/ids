@@ -22,7 +22,7 @@ import (
 func tRangeTest(t *testing.T, rootUrl string) {
 
 	t.Run("CreateStore", func(t *testing.T) {
-		url := rootUrl+"/kvstore?storename=mystore&keytype=string&storetype=oset"
+		url := rootUrl+"/kvstore?n=mystore&st=oset&t=str"
 		res,err := http.Post(url, "text/html; charset=utf-8", nil)
 		want := `{"code":201,"message":"success"}`+"\n"
 		tResult(t, res, err, want, http.StatusCreated)
@@ -34,7 +34,7 @@ func tRangeTest(t *testing.T, rootUrl string) {
 		t.Run("PostData", func(t *testing.T) {
 			for i:=0; i<total; i++ {
 				k := global.Int2StrPadZero(i, 10)
-				url := rootUrl+"/kvdata?storename=mystore&k="+ k +"&v="+ k
+				url := rootUrl+"/kvdata?n=mystore&k="+ k +"&v="+ k
 				res,err := http.Post(url, "text/html; charset=utf-8", nil)
 				tResult(t, res, err, want, sCode)
 			}
@@ -43,7 +43,7 @@ func tRangeTest(t *testing.T, rootUrl string) {
 		t.Run("RangeGetDataBack", func(t *testing.T) {
 			for i:=0; i<5; i++ {
 				k := global.Int2StrPadZero(i, 10)+"~"+global.Int2StrPadZero(i+10, 10)
-				url := rootUrl+"/kvdata/range?storename=mystore&range="+ k +"&limit=10&ascending=true"
+				url := rootUrl+"/kvdata/range?n=mystore&range="+ k +"&limit=10&ascending=true"
 				res,err := http.Get(url)
 				var data []string
 				for j:=i; j<i+10; j++ {
@@ -60,7 +60,7 @@ func tRangeTest(t *testing.T, rootUrl string) {
 	})
 	t.Run("DeleteStore", func(t *testing.T) {
 		want := `{"code":200,"message":"success"}`+"\n"
-		res,err := ghttp.Del(rootUrl+"/kvstore?storename=mystore", "text/html; charset=utf-8", nil)
+		res,err := ghttp.Del(rootUrl+"/kvstore?n=mystore", "text/html; charset=utf-8", nil)
 		tResult(t, res, err, want, http.StatusOK)
 	})
 }
@@ -87,7 +87,7 @@ func tRandomRangeRequestHttpDiscard(t *testing.T, nRequest, nReqRange, nTotalKey
 	for i:=0; i < nRequest; i++ {
 		k := rand.Intn(nTotalKeys-nReqRange)
 		key := global.Int2StrPadZero(k,10)+key+"~"+global.Int2StrPadZero(k+nReqRange,10)+key
-		u := rootUrl+"/kvdata/range?storename=mystore&range="+ key +"&limit=10&ascending=true"
+		u := rootUrl+"/kvdata/range?n=mystore&range="+ key +"&limit=10&ascending=true"
 		resp,err := http.Get(u)
 		if err != nil {
 			t.Errorf("tResult failed", err)
@@ -101,7 +101,7 @@ func tRandomRangeRequestHttpCheckResp(t *testing.T, nRequest, nReqRange, nTotalK
 	for i:=0; i < nRequest; i++ {
 		k := rand.Intn(nTotalKeys-nReqRange)
 		key := global.Int2StrPadZero(k,10)+key+"~"+global.Int2StrPadZero(k+nReqRange,10)+key
-		u := rootUrl+"/kvdata/range?storename=mystore&range="+ key +"&limit=10&ascending=true"
+		u := rootUrl+"/kvdata/range?n=mystore&range="+ key +"&limit=10&ascending=true"
 		resp,err := http.Get(u)
 		var data []string
 		for j:=k; j<k+nReqRange; j++ {
@@ -115,7 +115,7 @@ func tRandomRangeRequestHttpCheckResp(t *testing.T, nRequest, nReqRange, nTotalK
 
 
 func tRunRangeTest(t *testing.T, nTotalKeys int, a []int, key, str string) {
-	ost := oset.New("oset", global.KTStr)
+	ost, _ := oset.New("oset", "str")
 	t.Run("Create elements", func(t *testing.T) {
 		a = a[:nTotalKeys]
 		for _, v := range a {
@@ -135,7 +135,7 @@ func tRunRangeTestHttp(t *testing.T, nTotalKeys int, a []int, key, str, rootUrl 
 	code := http.StatusCreated
 
 	t.Run("Clear Store", func(t *testing.T) {
-		res,err := ghttp.Put(rootUrl +"/kvstore?storename=mystore&action=clear", "", nil)
+		res,err := ghttp.Put(rootUrl +"/kvstore?n=mystore&a=clear", "", nil)
 		tResult(t, res, err, `{"code":200,"message":"success"}`+"\n", http.StatusOK)
 	})
 	
@@ -145,7 +145,7 @@ func tRunRangeTestHttp(t *testing.T, nTotalKeys int, a []int, key, str, rootUrl 
 			kpad := global.Int2StrPadZero(v,10)
 			k := kpad+key
 			value := kpad+str
-			u := rootUrl +"/kvdata?storename=mystore&k="+k+"&v="+value
+			u := rootUrl +"/kvdata?n=mystore&k="+k+"&v="+value
 			res,err := http.Post(u, "text/html; charset=utf-8", nil)
 			tResult(t, res, err, want, code)
 		}

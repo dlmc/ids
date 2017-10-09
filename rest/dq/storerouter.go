@@ -5,6 +5,7 @@
 package dq
 
 import (
+	"github.com/dlmc/ids/global"
 	"github.com/dlmc/golight/ghttp"
 	"net/http"
 	"errors"
@@ -17,71 +18,69 @@ var StoreRouter = ghttp.Router{
 	"DELETE":&storeDelete{},
 }
 
-// GET ?storename=sname&action=size
+// GET ?n=sname&a=size
 type storeGet struct {}
 func (s *storeGet) ServeHTTPWithCtx(c ghttp.Ctx, h *ghttp.Http) ghttp.Ctx {
 	reqUri := h.R.RequestURI
 	resp := h.Resp
 	log := h.Log.Str("Get",reqUri).Logger()
-	sn, action, err := decodeRequestNA(h, strStoreGetActionEmpty)
+	n, a, err := decodeRequestNA(h, global.StrDqStoreGetActionEmpty)
 	if err == nil {
-		if action != "size" {
-			err = errors.New(action + strStoreGetActionNotExist)
-		} else if st, found := store.GetStore(sn); found {
+		if a != "size" {
+			err = errors.New(a + global.StrDqStoreGetActionNotExist)
+		} else if st, found := store.GetStore(n); found {
 			resp.Data = st.Size()
 		} else {
-			err = errors.New(strStoreNotExist + sn)
+			err = errors.New(global.StrStoreNotExist + n)
 		}
 	}
 	finishHandling(err,  resp, log, reqUri, http.StatusOK)
 	return c
 }
 
-// POST ?storename=sname  
+// POST ?n=sname&t=int|float|string
 type storePost struct {}
 func (s *storePost) ServeHTTPWithCtx(c ghttp.Ctx, h *ghttp.Http) ghttp.Ctx {
 	reqUri := h.R.RequestURI
 	log := h.Log.Str("Post", reqUri).Logger()
-	sn, err := decodeRequestN(h)
+	n, t, err := decodeRequestNT(h)
 	if err == nil {
-		if ok := store.CreateStore(sn); !ok {
-			err = errors.New(strStoreExist + sn)
-		}
+		err = store.CreateStore(n, t)
 	}
 	finishHandling(err,  h.Resp, log, reqUri, http.StatusCreated)
 	return c
 }
 
-// PUT ?storename=sname&action=clear
+// PUT ?n=sname&a=clear
 type storePut struct {}
 func (s *storePut) ServeHTTPWithCtx(c ghttp.Ctx, h *ghttp.Http) ghttp.Ctx {
 	reqUri := h.R.RequestURI
 	log := h.Log.Str("Put", reqUri).Logger()
-	sn, action, err := decodeRequestNA(h, strStorePutActionEmpty)
+	n, a, err := decodeRequestNA(h, global.StrDqStorePutActionEmpty)
 	if err == nil {
-		if action != "clear" {
-			err = errors.New(action + strStorePutActionNotExit)
-		} else if st, found := store.GetStore(sn); found {
+		if a != "clear" {
+			err = errors.New(a + global.StrDqStorePutActionNotExit)
+		} else if st, found := store.GetStore(n); found {
 			st.Clear()
 		} else {
-			err = errors.New(strStoreNotExist + sn)
+			err = errors.New(global.StrStoreNotExist + n)
 		}
 	}
 	finishHandling(err,  h.Resp, log, reqUri, http.StatusOK)
 	return c
 }
 
-// DELETE ?storename=sname
+// DELETE ?n=sname
 type storeDelete struct {}
 func (s *storeDelete) ServeHTTPWithCtx(c ghttp.Ctx, h *ghttp.Http) ghttp.Ctx {
 	reqUri := h.R.RequestURI
 	log := h.Log.Str("Delete",reqUri).Logger()
-	sn, err := decodeRequestN(h)
+	n, err := decodeRequestN(h)
 	if err == nil {		
-		if _, found := store.GetStore(sn); found {
-			store.DeleteStore(sn)
+		if _, found := store.GetStore(n); found {
+			store.DeleteStore(n)
 		} else {
-			err = errors.New(strStoreNotExist + sn)
+			err = errors.New(global.StrStoreNotExist + n)
 		}
 	}
 	finishHandling(err, h.Resp, log, reqUri, http.StatusOK)

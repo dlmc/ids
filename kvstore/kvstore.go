@@ -9,6 +9,7 @@ import (
 	"github.com/dlmc/ids/internal/set"
 	"github.com/dlmc/ids/internal/oset"
 	"github.com/dlmc/ids/global"
+	"errors"
 )
 
 
@@ -18,20 +19,29 @@ func New() KvStore {
 	return KvStore{}
 }
 
-// KeyType is ignored here, all uses string key
-func (s KvStore) CreateStore(name string, st global.StoreType, kt global.KeyType) bool{
+func (s KvStore) CreateStore(name, stype, ktype string) error {
+	var err error
 	if _, ok := s[name];  ok {
-		return false
+		err = errors.New(global.StrStoreExist + name)
+	} else {
+		switch stype {
+		case global.QueryStoreTypeSet:
+			if st, e := set.New(name, ktype); e == nil {
+				s[name] = st
+			} else {
+				err = e
+			}
+		case global.QueryStoreTypeOSet:
+			if st, e := oset.New(name, ktype); e == nil {
+				s[name] = st
+			} else {
+				err = e
+			}
+		default:
+			err = errors.New(stype + global.StrStoreTypeNotExist)
+		}		
 	}
-	switch st {
-	case global.STSet:
-		s[name] = set.New(name, global.KTStr)
-	case global.STOSet:
-		fallthrough 
-	default:
-		s[name] = oset.New(name, global.KTStr)
-	}
-	return true
+	return err
 }
 
 func (s KvStore) DeleteStore(name string) {
